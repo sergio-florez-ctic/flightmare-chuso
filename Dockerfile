@@ -26,10 +26,21 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 # Installing catkin tools
 RUN apt-get update && apt-get install -y python3-setuptools && pip3 install catkin-tools 
 
-RUN /bin/bash cd /home && git clone https://github.com/uzh-rpg/flightmare.git \
-    && echo "export FLIGHTMARE_PATH=/home/flightmare" >> ~/.bashrc
-    && source ~/.bashrc
+WORKDIR /home
+RUN git clone https://github.com/uzh-rpg/flightmare.git \
+    && sed -i 's/GIT_TAG           master/GIT_TAG           v2.10.4/' \
+        /home/flightmare/flightlib/cmake/pybind11_download.cmake \
+    && sed -i 's/GIT_TAG           master/GIT_TAG           yaml-cpp-0.7.0/' \
+        /home/flightmare/flightlib/cmake/yaml_download.cmake \
+    && sed -i 's/option(BUILD_TESTS "Building the tests" ON)/option(BUILD_TESTS "Building the tests" OFF)/' \
+        /home/flightmare/flightlib/CMakeLists.txt \
+    && sed -i 's/option(BUILD_UNITY_BRIDGE_TESTS "Building the Unity Bridge tests" ON)/option(BUILD_UNITY_BRIDGE_TESTS "Building the Unity Bridge tests" OFF)/' \
+        /home/flightmare/flightlib/CMakeLists.txt
 
-RUN /bin/bash cd /home/flightmare/flightlib && pip3 install . \
-    && cd /home/flightmare/flightrl && pip3 install . \
-    && 
+ENV FLIGHTMARE_PATH=/home/flightmare
+
+# Python 3.6 (Ubuntu 18.04): pin opencv-python before stable_baselines pulls 4.x from source
+RUN pip3 install --upgrade pip setuptools wheel \
+    && pip3 install "opencv-python==4.2.0.32" \
+    && pip3 install /home/flightmare/flightlib \
+    && pip3 install /home/flightmare/flightrl
