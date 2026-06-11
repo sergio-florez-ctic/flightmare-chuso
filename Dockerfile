@@ -35,12 +35,19 @@ RUN git clone https://github.com/uzh-rpg/flightmare.git \
     && sed -i 's/option(BUILD_TESTS "Building the tests" ON)/option(BUILD_TESTS "Building the tests" OFF)/' \
         /home/flightmare/flightlib/CMakeLists.txt \
     && sed -i 's/option(BUILD_UNITY_BRIDGE_TESTS "Building the Unity Bridge tests" ON)/option(BUILD_UNITY_BRIDGE_TESTS "Building the Unity Bridge tests" OFF)/' \
-        /home/flightmare/flightlib/CMakeLists.txt
+        /home/flightmare/flightlib/CMakeLists.txt \
+    && sed -i "s/packages=\['rpg_baselines'\]/packages=find_packages()/" \
+        /home/flightmare/flightrl/setup.py \
+    && touch /home/flightmare/flightrl/rpg_baselines/__init__.py \
+        /home/flightmare/flightrl/rpg_baselines/common/__init__.py \
+        /home/flightmare/flightrl/rpg_baselines/ppo/__init__.py \
+        /home/flightmare/flightrl/rpg_baselines/envs/__init__.py
 
 ENV FLIGHTMARE_PATH=/home/flightmare
 
-# Python 3.6 (Ubuntu 18.04): pin opencv-python before stable_baselines pulls 4.x from source
+# Python 3.6 (Ubuntu 18.04): pin deps incompatible with latest pip packages
 RUN pip3 install --upgrade pip setuptools wheel \
-    && pip3 install "opencv-python==4.2.0.32" \
+    && pip3 install "opencv-python==4.2.0.32" "tensorflow==1.15.5" \
     && pip3 install /home/flightmare/flightlib \
-    && pip3 install /home/flightmare/flightrl
+    && pip3 install /home/flightmare/flightrl \
+    && pip3 install "ruamel.yaml==0.17.32"
