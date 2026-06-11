@@ -3,6 +3,7 @@ setlocal EnableExtensions
 
 set "IMAGE_NAME=flightmare"
 set "DOCKERFILE_DIR=%~dp0"
+if "%DOCKERFILE_DIR:~-1%"=="\" set "DOCKERFILE_DIR=%DOCKERFILE_DIR:~0,-1%"
 
 if /I "%~1"=="run" goto :run
 if /I "%~1"=="build" goto :build_only
