@@ -56,7 +56,7 @@ function Show-SuccessMessage {
     Write-Host ''
     Write-Host 'Listo. Entra al contenedor con:'
     Write-Host '  .\launch.ps1 run'
-    Write-Host "  o: docker run -it --rm $ImageName bash"
+    Write-Host "  o: docker run -it --rm -v `"${DockerfileDir}:/home/flightmare`" -w /home/flightmare $ImageName bash"
     Write-Host ''
     Write-Host 'Prueba RL (headless, sin graficos):'
     Write-Host '  cd /home/flightmare/flightrl/examples'
@@ -79,7 +79,10 @@ function Invoke-Run {
         Write-Error "La imagen $ImageName no existe. Ejecuta: .\launch.ps1"
         exit 1
     }
-    Invoke-Docker run -it --rm $ImageName bash
+    Invoke-Docker run -it --rm `
+        -v "${DockerfileDir}:/home/flightmare" `
+        -w /home/flightmare `
+        $ImageName bash
 }
 
 $command = if ($args.Count -gt 0) { $args[0] } else { '' }

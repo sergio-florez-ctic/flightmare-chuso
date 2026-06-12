@@ -19,7 +19,7 @@ docker run --rm "${IMAGE_NAME}" python3 -c "import ruamel.yaml; print('ruamel.ya
 
 echo ""
 echo "Listo. Entra al contenedor con:"
-echo "  docker run -it --rm ${IMAGE_NAME} bash"
+echo "  docker run -it --rm -v \"$(pwd):/home/flightmare\" -w /home/flightmare ${IMAGE_NAME} bash"
 echo ""
 echo "Prueba RL (headless, sin graficos):"
 echo "  cd /home/flightmare/flightrl/examples"

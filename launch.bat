@@ -49,7 +49,7 @@ if errorlevel 1 goto :fail
 echo.
 echo Listo. Entra al contenedor con:
 echo   launch.bat run
-echo   o: docker run -it --rm %IMAGE_NAME% bash
+echo   o: docker run -it --rm -v "%DOCKERFILE_DIR%:/home/flightmare" -w /home/flightmare %IMAGE_NAME% bash
 echo.
 echo Prueba RL (headless, sin graficos):
 echo   cd /home/flightmare/flightrl/examples
@@ -63,7 +63,7 @@ if errorlevel 1 (
     echo La imagen %IMAGE_NAME% no existe. Ejecuta: launch.bat
     exit /b 1
 )
-docker run -it --rm %IMAGE_NAME% bash
+docker run -it --rm -v "%DOCKERFILE_DIR%:/home/flightmare" -w /home/flightmare %IMAGE_NAME% bash
 goto :end
 
 :help
