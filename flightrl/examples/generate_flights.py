@@ -2,6 +2,7 @@
 import argparse
 import os
 from scipy.spatial.transform import Rotation as Rot
+from scipy.ndimage import gaussian_filter1d
 import numpy as np
 import pandas as pd
 from ruamel.yaml import YAML, dump, RoundTripDumper
@@ -24,7 +25,7 @@ def parser():
     parser.add_argument("--rw-accel", type=float, default=0.001)
     parser.add_argument("--noise-gyro", type=float, default=0.005)
     parser.add_argument("--rw-gyro", type=float, default=0.0001)
-    parser.add_argument("--steps", type=int, default=3000, help="Número total de pasos de la simulación")
+    parser.add_argument('--steps', type=int, default=8000, help='Number of steps')
     return parser
 
 def make_env(args):
@@ -97,30 +98,49 @@ def main():
         target_y[curr_step] = 0.0
         curr_step += 1
 
-    # Fase 2: Crucero aleatorio suave y desordenado a altura constante
-    # Usamos suma de ondas senoidales de muy baja frecuencia para generar
-    # velocidades suaves e impredecibles en X e Y (vuelo natural).
-    cruise_time = steps_cruise * args.dt
-    t_cruise = np.linspace(0, cruise_time, steps_cruise)
+    # Fase 2: Misión estructurada (tramos rectos y curvas)
+    # Generamos un perfil de "velocidad de giro" (yaw rate) y lo integramos.
     
-    vx_cruise = np.zeros(steps_cruise)
-    vy_cruise = np.zeros(steps_cruise)
+    # Semilla determinista (puedes cambiar este número para generar otra misión distinta pero reproducible)
+    np.random.seed(args.seed)
     
-    # Sumar 5 ondas de baja frecuencia aleatorias para los desvíos suaves
-    for _ in range(5):
-        freq = np.random.uniform(0.05, 0.15) # Oscilaciones muy lentas (periodos de 6s a 20s)
-        phase_x = np.random.uniform(0, 2*np.pi)
-        phase_y = np.random.uniform(0, 2*np.pi)
-        amp_x = np.random.uniform(0.8, 2.0)  # Desvíos laterales
-        amp_y = np.random.uniform(0.2, 1.0)  # Ligeros acelerones y frenazos
+    turn_rates = np.zeros(steps_cruise)
+    idx = 0
+    
+    while idx < steps_cruise:
+        # 1. Tramo recto (sin giro)
+        straight_duration = np.random.uniform(3.0, 8.0) # Entre 3 y 8 segundos recto
+        straight_steps = int(straight_duration / args.dt)
+        # turn_rates ya es 0, así que solo avanzamos el índice
+        idx += straight_steps
         
-        vx_cruise += amp_x * np.sin(2 * np.pi * freq * t_cruise + phase_x)
-        vy_cruise += amp_y * np.sin(2 * np.pi * freq * t_cruise + phase_y)
+        if idx >= steps_cruise:
+            break
+            
+        # 2. Curva (giro constante)
+        turn_duration = np.random.uniform(3.0, 7.0) # Entre 3 y 7 segundos de curva
+        turn_steps = int(turn_duration / args.dt)
         
-    # Añadir un avance constante fuerte hacia adelante (+Y) 
-    # para que SIEMPRE se aleje del origen y no vuelva hacia atrás.
-    base_vy = 4.0
-    vy_cruise += base_vy
+        # Elegir un giro entre 15 y 35 grados por segundo
+        turn_rate = np.random.uniform(np.radians(15), np.radians(35))
+        turn_rate *= np.random.choice([-1, 1]) # Izquierda o derecha aleatoriamente
+        
+        end_idx = min(idx + turn_steps, steps_cruise)
+        turn_rates[idx:end_idx] = turn_rate
+        idx = end_idx
+
+    # Suavizar las transiciones entre rectas y curvas para que los cambios de dirección no sean instantáneos
+    smooth_turn_rates = gaussian_filter1d(turn_rates, sigma=50) # 0.5s de transición (fuerza G manejable)
+
+    # Integrar la velocidad de giro para obtener el rumbo (heading) a lo largo del tiempo
+    headings = np.cumsum(smooth_turn_rates) * args.dt
+    
+    # Velocidad de avance constante (ej. 5 m/s)
+    speed = 5.0
+    
+    # Descomponer en X e Y
+    vx_cruise = speed * np.sin(headings) # X es el eje transversal
+    vy_cruise = speed * np.cos(headings) # Y es el eje frontal
         
     # Fade in y Fade out para empezar y terminar sin tirones bruscos
     fade_len = min(200, steps_cruise // 4)

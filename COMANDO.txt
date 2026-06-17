@@ -1,0 +1,15 @@
+ABRIR SERVER:
+cd C:\Users\jesus.lozano\Desktop\ARQADE\Demo3\flightmare\flightmare-chuso
+
+Para crearlo de nuevo:
+docker run -it --name flightmare_container -p 10253:10253 -p 10254:10254 -v "${PWD}:/home/flightmare" flightmare bash
+
+Para ejecutar el mismo:
+docker start flightmare_container ; docker exec -it flightmare_container bash
+
+
+cd flightrender/RPG_Flightmare
+./RPG_Flightmare.x86_64 -nographics -batchmode
+
+ABRIR CLIENTE:
+docker exec -it flightmare_container bash

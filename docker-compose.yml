@@ -1,0 +1,15 @@
+services:
+  flightmare:
+    container_name: flightmare_container
+    image: ${IMAGE_NAME:-flightmare_image} # Reemplaza con el nombre de tu imagen si no usas variables de entorno
+    ports:
+      - "10253:10253"
+      - "10254:10254"
+    volumes:
+      # Asume que el directorio actual (.) es donde tienes tu Dockerfile. 
+      # Puedes cambiar '.' por una ruta absoluta o usar una variable.
+      - ${DOCKERFILE_DIR:-.}:/home/flightmare 
+    working_dir: /home/flightmare
+    stdin_open: true # Equivalente al flag -i (interactivo)
+    tty: true        # Equivalente al flag -t (tty)
+    command: bash

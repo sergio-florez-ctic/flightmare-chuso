@@ -25,8 +25,8 @@ QuadrotorEnv::QuadrotorEnv(const std::string &cfg_path)
   dynamics.updateParams(cfg_);
   quadrotor_ptr_->updateDynamics(dynamics);
 
-  // define a bounding box
-  world_box_ << -20, 20, -20, 20, 0, 20;
+  // define a bounding box (ampliada a 20km, Z hasta 200m de altura)
+  world_box_ << -20000, 20000, -20000, 20000, -200, 20000;
   if (!quadrotor_ptr_->setWorldBox(world_box_)) {
     logger_.error("cannot set wolrd box");
   };
@@ -67,6 +67,15 @@ bool QuadrotorEnv::reset(Ref<Vector<>> obs, const bool random) {
     quad_state_.x(QS::ATTY) = uniform_dist_(random_gen_);
     quad_state_.x(QS::ATTZ) = uniform_dist_(random_gen_);
     quad_state_.qx /= quad_state_.qx.norm();
+  } else {
+    // Deterministic reset: upright at origin, 10m altitude
+    // Identity quaternion (w=1, x=0, y=0, z=0) = no rotation
+    quad_state_.x(QS::ATTW) = 1.0;
+    quad_state_.x(QS::ATTX) = 0.0;
+    quad_state_.x(QS::ATTY) = 0.0;
+    quad_state_.x(QS::ATTZ) = 0.0;
+    // Start at 10m altitude (NED: z=-10)
+    quad_state_.x(QS::POSZ) = 10.0;
   }
   // reset quadrotor with random states
   quadrotor_ptr_->reset(quad_state_);
@@ -140,7 +149,10 @@ Scalar QuadrotorEnv::step(const Ref<Vector<>> act, Ref<Vector<>> obs) {
 }
 
 bool QuadrotorEnv::isTerminalState(Scalar &reward) {
-  if (quad_state_.x(QS::POSZ) <= 0.02) {
+  // En NED, Z positivo es hacia ABAJO. Un valor alto positivo significa que cayó al suelo.
+  // Z negativo significa que está volando alto.
+  // Consideramos choque si cae al suelo (ej. POSZ >= 2.0)
+  if (quad_state_.x(QS::POSZ) <= 0.0) {
     reward = -0.02;
     return true;
   }

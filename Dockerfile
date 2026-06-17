@@ -26,9 +26,11 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 # Installing catkin tools
 RUN apt-get update && apt-get install -y python3-setuptools && pip3 install catkin-tools 
 
-WORKDIR /home
-RUN git clone https://github.com/uzh-rpg/flightmare.git \
-    && sed -i 's/GIT_TAG           master/GIT_TAG           v2.10.4/' \
+WORKDIR /home/flightmare
+COPY flightlib /home/flightmare/flightlib
+COPY flightrl /home/flightmare/flightrl
+
+RUN sed -i 's/GIT_TAG           master/GIT_TAG           v2.10.4/' \
         /home/flightmare/flightlib/cmake/pybind11_download.cmake \
     && sed -i 's/GIT_TAG           master/GIT_TAG           yaml-cpp-0.7.0/' \
         /home/flightmare/flightlib/cmake/yaml_download.cmake \
